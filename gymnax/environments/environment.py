@@ -25,6 +25,9 @@ class EnvParams:
 class Environment(Generic[TEnvState, TEnvParams]):  # object):
     """Jittable abstract base class for all gymnax Environments."""
 
+    def __init__(self, disable_autoreset: bool = False):
+        self.disable_autoreset = disable_autoreset
+
     @property
     def default_params(self) -> EnvParams:
         return EnvParams()
@@ -44,9 +47,10 @@ class Environment(Generic[TEnvState, TEnvParams]):  # object):
         key, key_reset = jax.random.split(key)
         obs_st, state_st, reward, done, info = self.step_env(key, state, action, params)
         obs_re, state_re = self.reset_env(key_reset, params)
-        # Auto-reset environment based on termination
+        # Auto-reset environment based on termination if not disable_autoreset
+        should_reset = jnp.logical_and(done, jnp.logical_not(self.disable_autoreset))
         state = jax.tree_map(
-            lambda x, y: jax.lax.select(done, x, y), state_re, state_st
+            lambda x, y: jax.lax.select(should_reset, x, y), state_re, state_st
         )
         obs = jax.lax.select(done, obs_re, obs_st)
         return obs, state, reward, done, info
