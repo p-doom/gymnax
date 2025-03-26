@@ -89,7 +89,17 @@ class SimpleBandit(environment.Environment[EnvState, EnvParams]):
     def is_terminal(self, state: EnvState, params: EnvParams) -> jnp.ndarray:
         """Check whether state is terminal."""
         # Episode always terminates after single step - Do not reset though!
+        done_termination = self.is_termination(state, params)
+        done_truncation = self.is_truncation(state, params)
+        return jnp.array(jnp.logical_or(done_termination, done_truncation))
+
+    def is_termination(self, state: EnvState, params: EnvParams) -> jnp.ndarray:
+        """Check whether state is a natural termination of the episode."""
         return jnp.array(True)
+
+    def is_truncation(self, state: EnvState, params: EnvParams) -> jnp.ndarray:
+        """Check whether state is a truncation of the episode."""
+        return jnp.array(False)
 
     @property
     def name(self) -> str:

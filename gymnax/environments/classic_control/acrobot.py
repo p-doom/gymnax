@@ -141,16 +141,23 @@ class Acrobot(environment.Environment[EnvState, EnvParams]):
 
     def is_terminal(self, state: EnvState, params: EnvParams) -> jnp.ndarray:
         """Check whether state is terminal."""
-        # Check termination and construct updated state
+        done_termination = self.is_termination(state, params)
+        done_truncation = self.is_truncation(state, params)
+        return jnp.logical_or(done_termination, done_truncation)
+
+    def is_termination(self, state: EnvState, params: EnvParams) -> jnp.ndarray:
+        """Check whether state is a natural termination of the episode."""
         done_angle = (
             -jnp.cos(state.joint_angle1)
             - jnp.cos(state.joint_angle2 + state.joint_angle1)
             > 1.0
         )
-        # Check number of steps in episode termination condition
+        return jnp.array(done_angle)
+
+    def is_truncation(self, state: EnvState, params: EnvParams) -> jnp.ndarray:
+        """Check whether state is a truncation of the episode."""
         done_steps = state.time >= params.max_steps_in_episode
-        done = jnp.logical_or(done_angle, done_steps)
-        return done
+        return jnp.array(done_steps)
 
     @property
     def name(self) -> str:

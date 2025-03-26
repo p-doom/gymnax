@@ -145,10 +145,19 @@ class DeepSea(environment.Environment[EnvState, EnvParams]):
 
     def is_terminal(self, state: EnvState, params: EnvParams) -> jnp.ndarray:
         """Check whether state is terminal."""
+        done_termination = self.is_termination(state, params)
+        done_truncation = self.is_truncation(state, params)
+        return jnp.logical_or(done_termination, done_truncation)
+
+    def is_termination(self, state: EnvState, params: EnvParams) -> jnp.ndarray:
+        """Check whether state is a natural termination of the episode."""
         done_row = state.row == self.size
+        return jnp.array(done_row)
+
+    def is_truncation(self, state: EnvState, params: EnvParams) -> jnp.ndarray:
+        """Check whether state is a truncation of the episode."""
         done_steps = state.time >= params.max_steps_in_episode
-        done = jnp.logical_or(done_row, done_steps)
-        return done
+        return jnp.array(done_steps)
 
     @property
     def name(self) -> str:
