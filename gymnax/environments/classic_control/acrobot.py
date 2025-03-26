@@ -64,7 +64,7 @@ class Acrobot(environment.Environment[EnvState, EnvParams]):
         state: EnvState,
         action: Union[int, float, chex.Array],
         params: EnvParams,
-    ) -> Tuple[chex.Array, EnvState, jnp.ndarray, jnp.ndarray, Dict[Any, Any]]:
+    ) -> Tuple[chex.Array, EnvState, jnp.ndarray, jnp.ndarray, jnp.ndarray, Dict[Any, Any]]:
         """Perform single timestep state transition."""
         torque = params.available_torque[action]
         # Add noise to force action - always sample - conditionals in JAX
@@ -103,12 +103,14 @@ class Acrobot(environment.Environment[EnvState, EnvParams]):
             time=jnp.int32(state.time + 1),
         )
 
-        done = self.is_terminal(state, params)
+        termination = self.is_termination(state, params)
+        truncation = self.is_truncation(state, params)
         return (
             lax.stop_gradient(self.get_obs(state)),
             lax.stop_gradient(state),
             reward,
-            done,
+            termination,
+            truncation,
             {"discount": self.discount(state, params)},
         )
 

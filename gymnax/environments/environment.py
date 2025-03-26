@@ -72,7 +72,7 @@ class Environment(Generic[TEnvState, TEnvParams]):  # object):
         state: TEnvState,
         action: Union[int, float, chex.Array],
         params: TEnvParams,
-    ) -> Tuple[chex.Array, TEnvState, jnp.ndarray, jnp.ndarray, Dict[Any, Any]]:
+    ) -> Tuple[chex.Array, TEnvState, jnp.ndarray, jnp.ndarray, jnp.ndarray, Dict[Any, Any]]:
         """Environment-specific step transition."""
         raise NotImplementedError
 

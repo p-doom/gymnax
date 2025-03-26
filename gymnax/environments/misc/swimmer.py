@@ -49,7 +49,7 @@ class Swimmer(environment.Environment[EnvState, EnvParams]):
         state: EnvState,
         action: Union[int, float, chex.Array],
         params: EnvParams,
-    ) -> Tuple[chex.Array, EnvState, jnp.ndarray, jnp.ndarray, Dict[Any, Any]]:
+    ) -> Tuple[chex.Array, EnvState, jnp.ndarray, jnp.ndarray, jnp.ndarray, Dict[Any, Any]]:
         """Sample bernoulli reward, increase counter, construct input."""
         xy_vel = state.xy_vel + params.dt * action
         xy = state.xy + params.dt * xy_vel
@@ -69,12 +69,14 @@ class Swimmer(environment.Environment[EnvState, EnvParams]):
             axis=-1,
         )
 
-        done = self.is_terminal(state, params)
+        termination = self.is_termination(state, params)
+        truncation = self.is_truncation(state, params)
         return (
             lax.stop_gradient(self.get_obs(state, params)),
             lax.stop_gradient(state),
             reward,
-            done,
+            termination,
+            truncation,
             {"discount": self.discount(state, params)},
         )
 

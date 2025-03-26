@@ -105,7 +105,7 @@ class MetaMaze(environment.Environment[EnvState, EnvParams]):
         state: EnvState,
         action: Union[int, float, chex.Array],
         params: EnvParams,
-    ) -> Tuple[chex.Array, EnvState, jnp.ndarray, jnp.ndarray, Dict[Any, Any]]:
+    ) -> Tuple[chex.Array, EnvState, jnp.ndarray, jnp.ndarray, jnp.ndarray, Dict[Any, Any]]:
         """Perform single timestep state transition."""
         p = state.pos + self.directions[action]
         in_map = self.env_map[p[0], p[1]]
@@ -129,12 +129,14 @@ class MetaMaze(environment.Environment[EnvState, EnvParams]):
             goal=state.goal,
             time=state.time + 1,
         )
-        done = self.is_terminal(state, params)
+        termination = self.is_termination(state, params)
+        truncation = self.is_truncation(state, params)
         return (
             lax.stop_gradient(self.get_obs(state, params)),
             lax.stop_gradient(state),
             reward,
-            done,
+            termination,
+            truncation,
             {"discount": self.discount(state, params)},
         )
 

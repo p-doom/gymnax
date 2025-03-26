@@ -89,7 +89,7 @@ class MinSpaceInvaders(environment.Environment[EnvState, EnvParams]):
         state: EnvState,
         action: Union[int, float, chex.Array],
         params: EnvParams,
-    ) -> Tuple[chex.Array, EnvState, jnp.ndarray, jnp.ndarray, Dict[Any, Any]]:
+    ) -> Tuple[chex.Array, EnvState, jnp.ndarray, jnp.ndarray, jnp.ndarray, Dict[Any, Any]]:
         """Perform single timestep state transition."""
         # Resolve player action - fire, left, right.
         a = self.action_set[action]
@@ -117,7 +117,9 @@ class MinSpaceInvaders(environment.Environment[EnvState, EnvParams]):
         # Check game condition & no. steps for termination condition
         time = state.time + 1
         state = state.replace(time=time)
-        done = self.is_terminal(state, params)
+        termination = self.is_termination(state, params)
+        truncation = self.is_truncation(state, params)
+        done = jnp.logical_or(termination, truncation)
         terminal = done
         state = state.replace(
             shot_timer=shot_timer,
@@ -135,7 +137,8 @@ class MinSpaceInvaders(environment.Environment[EnvState, EnvParams]):
             lax.stop_gradient(self.get_obs(state)),
             lax.stop_gradient(state),
             reward.astype(jnp.float32),
-            done,
+            termination,
+            truncation,
             info,
         )
 

@@ -58,7 +58,7 @@ class CartPole(environment.Environment[EnvState, EnvParams]):
         state: EnvState,
         action: Union[int, float, chex.Array],
         params: EnvParams,
-    ) -> Tuple[chex.Array, EnvState, jnp.ndarray, jnp.ndarray, Dict[Any, Any]]:
+    ) -> Tuple[chex.Array, EnvState, jnp.ndarray, jnp.ndarray, jnp.ndarray, Dict[Any, Any]]:
         """Performs step transitions in the environment."""
         prev_terminal = self.is_terminal(state, params)
         force = params.force_mag * action - params.force_mag * (1 - action)
@@ -91,13 +91,15 @@ class CartPole(environment.Environment[EnvState, EnvParams]):
             theta_dot=theta_dot,
             time=state.time + 1,
         )
-        done = self.is_terminal(state, params)
+        termination = self.is_termination(state, params)
+        truncation = self.is_truncation(state, params)
 
         return (
             lax.stop_gradient(self.get_obs(state)),
             lax.stop_gradient(state),
             jnp.array(reward),
-            done,
+            termination,
+            truncation,
             {"discount": self.discount(state, params)},
         )
 

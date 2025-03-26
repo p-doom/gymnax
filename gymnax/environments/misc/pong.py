@@ -68,7 +68,7 @@ class Pong(environment.Environment[EnvState, EnvParams]):
         state: EnvState,
         action: Union[int, float, chex.Array],
         params: EnvParams,
-    ) -> Tuple[chex.Array, EnvState, jnp.ndarray, jnp.ndarray, Dict[Any, Any]]:
+    ) -> Tuple[chex.Array, EnvState, jnp.ndarray, jnp.ndarray, jnp.ndarray, Dict[Any, Any]]:
         """Perform single timestep state transition."""
         last_ball_position = state.ball_position
 
@@ -88,7 +88,8 @@ class Pong(environment.Environment[EnvState, EnvParams]):
         state = state.replace(
             last_ball_position=last_ball_position, time=state.time + 1
         )
-        done = self.is_terminal(state, params)
+        termination = self.is_termination(state, params)
+        truncation = self.is_truncation(state, params)
 
         reward = jnp.array(1.0 * (1 - done))
         info = {"discount": self.discount(state, params)}
@@ -96,7 +97,8 @@ class Pong(environment.Environment[EnvState, EnvParams]):
             lax.stop_gradient(self.get_obs(state)),
             lax.stop_gradient(state),
             reward.astype(jnp.float32),
-            done,
+            termination,
+            truncation,
             info,
         )
 

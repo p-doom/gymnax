@@ -53,7 +53,7 @@ class MountainCar(environment.Environment[EnvState, EnvParams]):
         state: EnvState,
         action: Union[int, float, chex.Array],
         params: EnvParams,
-    ) -> Tuple[chex.Array, EnvState, jnp.ndarray, jnp.ndarray, Dict[Any, Any]]:
+    ) -> Tuple[chex.Array, EnvState, jnp.ndarray, jnp.ndarray, jnp.ndarray, Dict[Any, Any]]:
         """Perform single timestep state transition."""
         velocity = (
             state.velocity
@@ -69,13 +69,15 @@ class MountainCar(environment.Environment[EnvState, EnvParams]):
 
         # Update state dict and evaluate termination conditions
         state = EnvState(position=position, velocity=velocity, time=state.time + 1)
-        done = self.is_terminal(state, params)
+        termination = self.is_termination(state, params)
+        truncation = self.is_truncation(state, params)
 
         return (
             lax.stop_gradient(self.get_obs(state)),
             lax.stop_gradient(state),
             jnp.array(reward),
-            done,
+            termination,
+            truncation,
             {"discount": self.discount(state, params)},
         )
 

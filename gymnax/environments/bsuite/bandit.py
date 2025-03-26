@@ -47,7 +47,7 @@ class SimpleBandit(environment.Environment[EnvState, EnvParams]):
         state: EnvState,
         action: Union[int, float, chex.Array],
         params: EnvParams,
-    ) -> Tuple[chex.Array, EnvState, jnp.ndarray, jnp.ndarray, Dict[Any, Any]]:
+    ) -> Tuple[chex.Array, EnvState, jnp.ndarray, jnp.ndarray, jnp.ndarray, Dict[Any, Any]]:
         """Perform single timestep state transition."""
         reward = state.rewards[action]
         state = EnvState(
@@ -57,13 +57,15 @@ class SimpleBandit(environment.Environment[EnvState, EnvParams]):
         )
 
         # Check game condition & no. steps for termination condition
-        done = self.is_terminal(state, params)
+        termination = self.is_termination(state, params)
+        truncation = self.is_truncation(state, params)
         info = {"discount": self.discount(state, params)}
         return (
             lax.stop_gradient(self.get_obs(state)),
             lax.stop_gradient(state),
             reward,
-            done,
+            termination,
+            truncation,
             info,
         )
 
@@ -91,7 +93,7 @@ class SimpleBandit(environment.Environment[EnvState, EnvParams]):
         # Episode always terminates after single step - Do not reset though!
         done_termination = self.is_termination(state, params)
         done_truncation = self.is_truncation(state, params)
-        return jnp.array(jnp.logical_or(done_termination, done_truncation))
+        return jnp.logical_or(done_termination, done_truncation)
 
     def is_termination(self, state: EnvState, params: EnvParams) -> jnp.ndarray:
         """Check whether state is a natural termination of the episode."""

@@ -85,7 +85,7 @@ class MinAsterix(environment.Environment[EnvState, EnvParams]):
         state: EnvState,
         action: Union[int, float, chex.Array],
         params: EnvParams,
-    ) -> Tuple[chex.Array, EnvState, jnp.ndarray, jnp.ndarray, Dict[Any, Any]]:
+    ) -> Tuple[chex.Array, EnvState, jnp.ndarray, jnp.ndarray, jnp.ndarray, Dict[Any, Any]]:
         """Perform single timestep state transition."""
         # Spawn enemy if timer up - sample at each step & select based on timer
         spawn_entities_now = state.spawn_timer == 0
@@ -112,13 +112,15 @@ class MinAsterix(environment.Environment[EnvState, EnvParams]):
 
         # Check game condition & no. steps for termination condition
         state = state.replace(time=state.time + 1, terminal=done)
-        done = self.is_terminal(state, params)
         info = {"discount": self.discount(state, params)}
+        termination = self.is_termination(state, params)
+        truncation = self.is_truncation(state, params)
         return (
             lax.stop_gradient(self.get_obs(state)),
             lax.stop_gradient(state),
             reward.astype(jnp.float32),
-            done,
+            termination,
+            truncation,
             info,
         )
 

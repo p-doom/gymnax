@@ -50,7 +50,7 @@ class MemoryChain(environment.Environment[EnvState, EnvParams]):
         state: EnvState,
         action: Union[int, float, chex.Array],
         params: EnvParams,
-    ) -> Tuple[chex.Array, EnvState, jnp.ndarray, jnp.ndarray, Dict[Any, Any]]:
+    ) -> Tuple[chex.Array, EnvState, jnp.ndarray, jnp.ndarray, jnp.ndarray, Dict[Any, Any]]:
         """Perform single timestep state transition."""
         obs = self.get_obs(state, params)
 
@@ -72,13 +72,15 @@ class MemoryChain(environment.Environment[EnvState, EnvParams]):
         )
 
         # Check game condition & no. steps for termination condition
-        done = self.is_terminal(state, params)
+        termination = self.is_termination(state, params)
+        truncation = self.is_truncation(state, params)
         info = {"discount": self.discount(state, params)}
         return (
             lax.stop_gradient(obs),
             lax.stop_gradient(state),
             reward,
-            done,
+            termination,
+            truncation,
             info,
         )
 

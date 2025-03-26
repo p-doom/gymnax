@@ -49,7 +49,7 @@ class UmbrellaChain(environment.Environment[EnvState, EnvParams]):
         state: EnvState,
         action: Union[int, float, chex.Array],
         params: EnvParams,
-    ) -> Tuple[chex.Array, EnvState, jnp.ndarray, jnp.ndarray, Dict[Any, Any]]:
+    ) -> Tuple[chex.Array, EnvState, jnp.ndarray, jnp.ndarray, jnp.ndarray, Dict[Any, Any]]:
         """Perform single timestep state transition."""
         has_umbrella = lax.select(state.time + 1 == 1, action, state.has_umbrella)
         reward = 0
@@ -74,7 +74,8 @@ class UmbrellaChain(environment.Environment[EnvState, EnvParams]):
             time=state.time + 1,
         )
         # Check game condition & no. steps for termination condition
-        done = self.is_terminal(state, params)
+        termination = self.is_termination(state, params)
+        truncation = self.is_truncation(state, params)
         info = {"discount": self.discount(state, params)}
         return (
             lax.stop_gradient(
@@ -82,7 +83,8 @@ class UmbrellaChain(environment.Environment[EnvState, EnvParams]):
             ),
             lax.stop_gradient(state),
             reward,
-            done,
+            termination,
+            truncation,
             info,
         )
 
