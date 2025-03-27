@@ -52,7 +52,7 @@ class Environment(Generic[TEnvState, TEnvParams]):  # object):
         state = jax.tree_map(
             lambda x, y: jax.lax.select(should_reset, x, y), state_re, state_st
         )
-        obs = jax.lax.select(done, obs_re, obs_st)
+        obs = jax.lax.select(should_reset, obs_re, obs_st)
         return obs, state, reward, done, info
 
     @functools.partial(jax.jit, static_argnums=(0,))
