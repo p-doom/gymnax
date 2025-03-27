@@ -39,9 +39,6 @@ class EnvParams(environment.EnvParams):
 class MountainCar(environment.Environment[EnvState, EnvParams]):
     """JAX Compatible  version of MountainCar-v0 OpenAI gym environment."""
 
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-
     @property
     def default_params(self) -> EnvParams:
         # Default environment parameters

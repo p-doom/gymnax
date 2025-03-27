@@ -38,8 +38,8 @@ class EnvParams(environment.EnvParams):
 class Pendulum(environment.Environment[EnvState, EnvParams]):
     """JAX Compatible version of Pendulum-v0 OpenAI gym environment."""
 
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
+    def __init__(self):
+        super().__init__()
         self.obs_shape = (3,)
 
     @property

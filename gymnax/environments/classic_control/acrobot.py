@@ -49,8 +49,8 @@ class EnvParams(environment.EnvParams):
 class Acrobot(environment.Environment[EnvState, EnvParams]):
     """JAX Compatible version of Acrobot-v1 OpenAI gym environment."""
 
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
+    def __init__(self):
+        super().__init__()
         self.obs_shape = (6,)
 
     @property
