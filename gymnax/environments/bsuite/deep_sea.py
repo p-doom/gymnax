@@ -57,7 +57,7 @@ class DeepSea(environment.Environment[EnvState, EnvParams]):
         state: EnvState,
         action: Union[int, float, chex.Array],
         params: EnvParams,
-    ) -> Tuple[chex.Array, EnvState, jnp.ndarray, jnp.ndarray, Dict[Any, Any]]:
+    ) -> Tuple[chex.Array, EnvState, jnp.ndarray, jnp.ndarray, jnp.ndarray, Dict[Any, Any]]:
         """Perform single timestep state transition."""
         # Pull out randomness for easier testing
         rng_reward, rng_trans = jax.random.split(key)
@@ -85,7 +85,9 @@ class DeepSea(environment.Environment[EnvState, EnvParams]):
         )
 
         # Check row condition & no. steps for termination condition
-        done = self.is_terminal(state, params)
+        termination = self.is_termination(state, params)
+        truncation = self.is_truncation(state, params)
+        done = jnp.locical_or(termination, truncation)
         state = state.replace(
             total_bad_episodes=state.total_bad_episodes + done * state.bad_episode
         )
@@ -94,7 +96,8 @@ class DeepSea(environment.Environment[EnvState, EnvParams]):
             lax.stop_gradient(self.get_obs(state)),
             lax.stop_gradient(state),
             reward,
-            done,
+            termination,
+            truncation,
             info,
         )
 
@@ -145,10 +148,19 @@ class DeepSea(environment.Environment[EnvState, EnvParams]):
 
     def is_terminal(self, state: EnvState, params: EnvParams) -> jnp.ndarray:
         """Check whether state is terminal."""
+        done_termination = self.is_termination(state, params)
+        done_truncation = self.is_truncation(state, params)
+        return jnp.logical_or(done_termination, done_truncation)
+
+    def is_termination(self, state: EnvState, params: EnvParams) -> jnp.ndarray:
+        """Check whether state is a natural termination of the episode."""
         done_row = state.row == self.size
+        return jnp.array(done_row)
+
+    def is_truncation(self, state: EnvState, params: EnvParams) -> jnp.ndarray:
+        """Check whether state is a truncation of the episode."""
         done_steps = state.time >= params.max_steps_in_episode
-        done = jnp.logical_or(done_row, done_steps)
-        return done
+        return jnp.array(done_steps)
 
     @property
     def name(self) -> str:

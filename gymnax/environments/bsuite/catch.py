@@ -51,7 +51,7 @@ class Catch(environment.Environment[EnvState, EnvParams]):
         state: EnvState,
         action: Union[int, float, chex.Array],
         params: EnvParams,
-    ) -> Tuple[chex.Array, EnvState, jnp.ndarray, jnp.ndarray, Dict[Any, Any]]:
+    ) -> Tuple[chex.Array, EnvState, jnp.ndarray, jnp.ndarray, jnp.ndarray, Dict[Any, Any]]:
         """Perform single timestep state transition."""
         # Sample new init state each step & use if there was a reset!
         ball_x, ball_y, paddle_x, paddle_y = sample_init_state(
@@ -85,12 +85,14 @@ class Catch(environment.Environment[EnvState, EnvParams]):
         )
 
         # Check number of steps in episode termination condition
-        done = self.is_terminal(state, params)
+        termination = self.is_termination(state, params)
+        truncation = self.is_truncation(state, params)
         return (
             lax.stop_gradient(self.get_obs(state)),
             lax.stop_gradient(state),
             reward,
-            done,
+            termination,
+            truncation,
             {"discount": self.discount(state, params)},
         )
 
@@ -121,10 +123,19 @@ class Catch(environment.Environment[EnvState, EnvParams]):
 
     def is_terminal(self, state: EnvState, params: EnvParams) -> jnp.ndarray:
         """Check whether state is terminal."""
+        done_termination = self.is_termination(state, params)
+        done_truncation = self.is_truncation(state, params)
+        return jnp.logical_or(done_termination, done_truncation)
+
+    def is_termination(self, state: EnvState, params: EnvParams) -> jnp.ndarray:
+        """Check whether state is a natural termination of the episode."""
         done_loose = state.ball_y == self.rows - 1
+        return jnp.array(done_loose)
+
+    def is_truncation(self, state: EnvState, params: EnvParams) -> jnp.ndarray:
+        """Check whether state is a truncation of the episode."""
         done_steps = state.time >= params.max_steps_in_episode
-        done = jnp.logical_or(done_loose, done_steps)
-        return done
+        return done_steps
 
     @property
     def name(self) -> str:

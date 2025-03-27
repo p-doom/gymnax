@@ -39,13 +39,14 @@ class Environment(Generic[TEnvState, TEnvParams]):  # object):
         state: TEnvState,
         action: Union[int, float, chex.Array],
         params: Optional[TEnvParams] = None,
-    ) -> Tuple[chex.Array, TEnvState, jnp.ndarray, jnp.ndarray, Dict[Any, Any]]:
+    ) -> Tuple[chex.Array, TEnvState, jnp.ndarray, jnp.ndarray, jnp.ndarray, Dict[Any, Any]]:
         """Performs step transitions in the environment."""
         # Use default env parameters if no others specified
         if params is None:
             params = self.default_params
         key, key_reset = jax.random.split(key)
-        obs_st, state_st, reward, done, info = self.step_env(key, state, action, params)
+        obs_st, state_st, reward, termination, truncation, info = self.step_env(key, state, action, params)
+        done = jnp.logical_or(termination, truncation)
         obs_re, state_re = self.reset_env(key_reset, params)
         # Auto-reset environment based on termination if not disable_autoreset
         should_reset = jnp.logical_and(done, jnp.logical_not(self.disable_autoreset))
@@ -53,7 +54,7 @@ class Environment(Generic[TEnvState, TEnvParams]):  # object):
             lambda x, y: jax.lax.select(should_reset, x, y), state_re, state_st
         )
         obs = jax.lax.select(should_reset, obs_re, obs_st)
-        return obs, state, reward, done, info
+        return obs, state, reward, termination, truncation, info
 
     @functools.partial(jax.jit, static_argnums=(0,))
     def reset(
@@ -72,7 +73,7 @@ class Environment(Generic[TEnvState, TEnvParams]):  # object):
         state: TEnvState,
         action: Union[int, float, chex.Array],
         params: TEnvParams,
-    ) -> Tuple[chex.Array, TEnvState, jnp.ndarray, jnp.ndarray, Dict[Any, Any]]:
+    ) -> Tuple[chex.Array, TEnvState, jnp.ndarray, jnp.ndarray, jnp.ndarray, Dict[Any, Any]]:
         """Environment-specific step transition."""
         raise NotImplementedError
 

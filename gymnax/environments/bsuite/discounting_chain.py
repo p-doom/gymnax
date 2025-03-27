@@ -50,7 +50,7 @@ class DiscountingChain(environment.Environment[EnvState, EnvParams]):
         state: EnvState,
         action: Union[int, float, chex.Array],
         params: EnvParams,
-    ) -> Tuple[chex.Array, EnvState, jnp.ndarray, jnp.ndarray, Dict[Any, Any]]:
+    ) -> Tuple[chex.Array, EnvState, jnp.ndarray, jnp.ndarray, jnp.ndarray, Dict[Any, Any]]:
         """Perform single timestep state transition."""
         state = EnvState(
             rewards=state.rewards,
@@ -64,13 +64,15 @@ class DiscountingChain(environment.Environment[EnvState, EnvParams]):
         )
 
         # Check game condition & no. steps for termination condition
-        done = self.is_terminal(state, params)
+        termination = self.is_termination(state, params)
+        truncation = self.is_truncation(state, params)
         info = {"discount": self.discount(state, params)}
         return (
             lax.stop_gradient(self.get_obs(state, params)),
             lax.stop_gradient(state),
             reward,
-            done,
+            termination,
+            truncation,
             info,
         )
 
@@ -96,8 +98,18 @@ class DiscountingChain(environment.Environment[EnvState, EnvParams]):
 
     def is_terminal(self, state: EnvState, params: EnvParams) -> jnp.ndarray:
         """Check whether state is terminal."""
-        done = state.time >= params.max_steps_in_episode
-        return jnp.array(done)
+        done_termination = self.is_termination(state, params)
+        done_truncation = self.is_truncation(state, params)
+        return jnp.logical_or(done_termination, done_truncation)
+
+    def is_termination(self, state: EnvState, params: EnvParams) -> jnp.ndarray:
+        """Check whether state is a natural termination of the episode."""
+        return jnp.array(False)
+
+    def is_truncation(self, state: EnvState, params: EnvParams) -> jnp.ndarray:
+        """Check whether state is a truncation of the episode."""
+        done_steps = state.time >= params.max_steps_in_episode
+        return jnp.array(done_steps)
 
     @property
     def name(self) -> str:

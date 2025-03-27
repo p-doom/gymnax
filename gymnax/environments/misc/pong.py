@@ -68,7 +68,7 @@ class Pong(environment.Environment[EnvState, EnvParams]):
         state: EnvState,
         action: Union[int, float, chex.Array],
         params: EnvParams,
-    ) -> Tuple[chex.Array, EnvState, jnp.ndarray, jnp.ndarray, Dict[Any, Any]]:
+    ) -> Tuple[chex.Array, EnvState, jnp.ndarray, jnp.ndarray, jnp.ndarray, Dict[Any, Any]]:
         """Perform single timestep state transition."""
         last_ball_position = state.ball_position
 
@@ -88,7 +88,8 @@ class Pong(environment.Environment[EnvState, EnvParams]):
         state = state.replace(
             last_ball_position=last_ball_position, time=state.time + 1
         )
-        done = self.is_terminal(state, params)
+        termination = self.is_termination(state, params)
+        truncation = self.is_truncation(state, params)
 
         reward = jnp.array(1.0 * (1 - done))
         info = {"discount": self.discount(state, params)}
@@ -96,7 +97,8 @@ class Pong(environment.Environment[EnvState, EnvParams]):
             lax.stop_gradient(self.get_obs(state)),
             lax.stop_gradient(state),
             reward.astype(jnp.float32),
-            done,
+            termination,
+            truncation,
             info,
         )
 
@@ -149,10 +151,19 @@ class Pong(environment.Environment[EnvState, EnvParams]):
 
     def is_terminal(self, state: EnvState, params: EnvParams) -> jnp.ndarray:
         """Check whether state is terminal."""
-        done_steps = state.time >= params.max_steps_in_episode
+        done_termination = self.is_termination(state, params)
+        done_truncation = self.is_truncation(state, params)
+        return jnp.logical_or(done_termination, done_truncation)
+
+    def is_termination(self, state: EnvState, params: EnvParams) -> jnp.ndarray:
+        """Check whether state is a natural termination of the episode."""
         done_term = update_game_state(state, self.width)
-        done = jnp.logical_or(jnp.array(done_steps), jnp.array(done_term))
-        return jnp.logical_or(done, state.terminal)
+        return jnp.logical_or(jnp.array(done_term, state.terminal))
+
+    def is_truncation(self, state: EnvState, params: EnvParams) -> jnp.ndarray:
+        """Check whether state is a truncation of the episode."""
+        done_steps = state.time >= params.max_steps_in_episode
+        return jnp.array(done_steps)
 
     @property
     def name(self) -> str:
