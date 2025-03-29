@@ -41,9 +41,6 @@ class EnvParams(environment.EnvParams):
 class ContinuousMountainCar(environment.Environment[EnvState, EnvParams]):
     """JAX Compatible  version of MountainCarContinuous-v0 OpenAI gym environment."""
 
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-
     @property
     def default_params(self) -> EnvParams:
         # Default environment parameters
