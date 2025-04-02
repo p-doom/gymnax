@@ -88,7 +88,7 @@ class MinBreakout(environment.Environment[EnvState, EnvParams]):
         state = state.replace(time=state.time + 1)
         termination = self.is_termination(state, params)
         truncation = self.is_truncation(state, params)
-        state = state.replace(terminal=done)
+        state = state.replace(terminal=jnp.logical_or(termination, truncation))
         info = {"discount": self.discount(state, params)}
         return (
             lax.stop_gradient(self.get_obs(state)),
